@@ -301,21 +301,20 @@ bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location
     return moveValid;
 }
 
-std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
+std::pair<int, int> getPlayerMove(int player, Board &theBoard, const std::map<std::pair<int, int>, std::list<std::pair<int, int>>>& validMoves) {
     // error message to print when we clear the screen
     std::string errorMessage;
-    
-    // the player's move location
     std::pair<int, int> playerMoveLocation;
     int maxSize = theBoard.getMaxBoardSize();
 
     while (true) {
         // clear the screen and set cursor to the upper left
-        // ANSI escape codes 
+        // ANSI escape codes
         // clear the screen \033[2J
         // reset cursor \033[H
         std::cout << "\033[2J\033[H"; 
-        std::cout << "Player " << player << "'s turn.\n";
+        // print X or O for the player
+        std::cout << "Player " << (player == 1 ? "X" : "O") << "'s turn.\n";
         theBoard.printBoard();
 
         // print the error message if there is one
@@ -332,7 +331,7 @@ std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
             // clear error flags
             std::cin.clear();
             // ignore invalid input
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             continue;
         }
 
@@ -340,27 +339,20 @@ std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
         playerMoveLocation.first -= 1;
         playerMoveLocation.second -= 1;
 
-        // check if the row is within bounds
-        if (playerMoveLocation.first < 0 || playerMoveLocation.first >= maxSize) {
-            errorMessage = "Invalid row: " + std::to_string(playerMoveLocation.first + 1);
-            errorMessage += (playerMoveLocation.first < 0) ? " (too small)." : " (too large).";
+        // check if the row and column are within bounds
+        if (playerMoveLocation.first < 0 || playerMoveLocation.first >= maxSize || 
+            playerMoveLocation.second < 0 || playerMoveLocation.second >= maxSize) {
+            errorMessage = "Move out of bounds. Please enter a valid position.";
             continue;
         }
 
-        // check if the column is within bounds
-        if (playerMoveLocation.second < 0 || playerMoveLocation.second >= maxSize) {
-            errorMessage = "Invalid column: " + std::to_string(playerMoveLocation.second + 1);
-            errorMessage += (playerMoveLocation.second < 0) ? " (too small)." : " (too large).";
+        // check if the move is in the validMoves map
+        if (validMoves.find(playerMoveLocation) == validMoves.end()) {
+            errorMessage = "Invalid move. Please choose a position with available flips.";
             continue;
         }
 
-        // check if the move is valid using isPlayerMoveValid function
-        if (!isPlayerMoveValid(theBoard, player, playerMoveLocation)) {
-            errorMessage = "Invalid move. Please choose an empty and valid spot.";
-            continue;
-        }
-
-        // if the move is valid, clear the error message and return the move
+        // clear error message and return the valid move
         errorMessage.clear();
         return playerMoveLocation;
     }
@@ -396,7 +388,7 @@ int main() {
             break;
         }
         // get a valid move for this player
-        std::pair<int, int> playerMove = getPlayerMove(currentPlayer, theBoard);
+        std::pair<int, int> playerMove = getPlayerMove(currentPlayer, theBoard, validMoves);
         
         // place the piece
         theBoard.placePiece(playerMove, currentPlayer);
