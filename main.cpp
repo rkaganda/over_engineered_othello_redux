@@ -110,8 +110,18 @@ public:
     }
 
     // places a piece
-    void placePiece(const std::pair<int, int>& position, int player) {
-        board.at(position).setPiece(player); // set the value to 1 or 2 based on the player
+    void placePiece(
+        const std::pair<int, int>& position, 
+        int player, 
+        const std::list<std::pair<int, int>>& toFlip
+    ) {
+        // set the value to 1 or 2 based on the player
+        board.at(position).setPiece(player); 
+        
+        // flip each piece in the list
+        for (const auto& flipPosition : toFlip) {
+            board.at(flipPosition).flipPiece();
+        }
     }
 
     int getBoardPlaceValue(const std::pair<int, int>& position) const {
@@ -301,7 +311,11 @@ bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location
     return moveValid;
 }
 
-std::pair<int, int> getPlayerMove(int player, Board &theBoard, const std::map<std::pair<int, int>, std::list<std::pair<int, int>>>& validMoves) {
+std::pair<int, int> getPlayerMove(
+    int player, Board &theBoard, 
+    const std::map<std::pair<int, int>, 
+    std::list<std::pair<int, int>>>& validMoves
+) {
     // error message to print when we clear the screen
     std::string errorMessage;
     std::pair<int, int> playerMoveLocation;
@@ -390,8 +404,8 @@ int main() {
         // get a valid move for this player
         std::pair<int, int> playerMove = getPlayerMove(currentPlayer, theBoard, validMoves);
         
-        // place the piece
-        theBoard.placePiece(playerMove, currentPlayer);
+        // place the piece, pass pieces to be flipped
+        theBoard.placePiece(playerMove, currentPlayer, validMoves.at(playerMove));
         
         // add this move to the gameHistory
         gameHistory.push(PlayerMove(currentPlayer, playerMove));
