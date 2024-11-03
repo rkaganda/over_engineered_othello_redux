@@ -4,6 +4,7 @@
 #include <stack>
 #include <limits>
 #include <list>
+#include <algorithm>
 
 
 // this list is used to store the directions that 
@@ -189,32 +190,41 @@ public:
     std::map<std::pair<int, int>, std::list<std::pair<int, int>>> getValidMoves(int player) const {
         // map to store valid moves and flippable pieces
         std::map<std::pair<int, int>, std::list<std::pair<int, int>>> validMovesMap;  
+        
+        // lambda empty check for find_if
+        auto isSquareEmpty = [this](const auto& entry) {
+            return entry.second.isEmpty();
+        };
+        
+        // get iterator for the start of the board
+        auto it = board.begin();
 
-        // iterate over each position on the board using an iterator
-        for (auto it = board.begin(); it != board.end(); ++it) {
-            // current position (row, col)
+        // iterate using find_if so we dont enter the loop
+        // until iterator reached board.end
+        while((it = std::find_if(it, board.end(), isSquareEmpty)) != board.end()) {
+            // current position we check (row, col)
             std::pair<int, int> position = it->first;
+            
+            // list to accumulate flippable pieces in all directions
+            std::list<std::pair<int, int>> totalFlippablePieces;  
 
-            // check if the square is empty
-            if (it->second.isEmpty()) {
-                // list to accumulate flippable pieces in all directions
-                std::list<std::pair<int, int>> totalFlippablePieces;  
-
-                // check each direction for flippable pieces
-                for (const auto& direction : directions) {
-                    // temporary list for the current direction
-                    std::list<std::pair<int, int>> toFlip;  
-                    if (findFlippablePieces(position, player, direction, toFlip)) {
-                        // add flippable pieces in this direction to the total list
-                        totalFlippablePieces.insert(totalFlippablePieces.end(), toFlip.begin(), toFlip.end());
-                    }
-                }
-
-                // if there are any flippable pieces, store the move in the map
-                if (!totalFlippablePieces.empty()) {
-                    validMovesMap[position] = totalFlippablePieces;
+            // check each direction for flippable pieces
+            for (const auto& direction : directions) {
+                // temporary list for the current direction
+                std::list<std::pair<int, int>> toFlip;  
+                if (findFlippablePieces(position, player, direction, toFlip)) {
+                    // add flippable pieces in this direction to the total list
+                    totalFlippablePieces.insert(totalFlippablePieces.end(), toFlip.begin(), toFlip.end());
                 }
             }
+
+            // if there are any flippable pieces, store the move in the map
+            if (!totalFlippablePieces.empty()) {
+                validMovesMap[position] = totalFlippablePieces;
+            }
+            
+            // increment the iterator
+            it++;
         }
         return validMovesMap;  // return the map of valid moves with their flippable pieces
     }
