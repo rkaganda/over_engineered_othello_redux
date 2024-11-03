@@ -79,13 +79,33 @@ private:
     int maxBoardSize;
 
 public:
-    // init the board with size
+    // init the board with a given size
     Board(int size) : maxBoardSize(size) {
+        // check for invalid board
+        if (size < 4) {
+            throw std::invalid_argument("Board size must be at least 4.");
+        }
+
+        // init an empty board
         for (int row = 0; row < maxBoardSize; ++row) {
             for (int col = 0; col < maxBoardSize; ++col) {
-                // create an empty BoardSquare
                 board[{row, col}] = BoardSquare();
             }
+        }
+
+        // find center to place starting pieces
+        int center = maxBoardSize / 2;
+
+        // set up starting pieces:
+        // 0 1
+        // 1 0
+        try {
+            board.at({center - 1, center - 1}).setPiece(1);  // Top-left of center with Player X (1)
+            board.at({center - 1, center}).setPiece(2);      // Top-right of center with Player O (2)
+            board.at({center, center - 1}).setPiece(2);      // Bottom-left of center with Player O (2)
+            board.at({center, center}).setPiece(1);          // Bottom-right of center with Player X (1)
+        } catch (const std::exception& e) {
+            std::cerr << "Error initializing the board's center pieces: " << e.what() << std::endl;
         }
     }
 
@@ -346,12 +366,24 @@ std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
     }
 }
 
+
+int getBoardSize() {
+    int size;
+    do {
+        std::cout << "Enter board size (minimum 4): ";
+        std::cin >> size;
+        if (size < 4) {
+            std::cout << "Board size must be at least 4. Please try again.\n";
+        }
+    } while (size < 4);
+    return size;
+}
+
 int main() {
+    // starting player
     int currentPlayer = 1;
-    int maxBoardSize;
-    
-    std::cout << "Enter board size: ";
-    std::cin >> maxBoardSize;
+    // get the board size
+    int maxBoardSize = getBoardSize();  
     
     Board theBoard(maxBoardSize);
     std::stack<PlayerMove> gameHistory;
