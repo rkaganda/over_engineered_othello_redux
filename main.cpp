@@ -82,6 +82,50 @@ public:
             std::cout << std::endl;
         }
     }
+    
+    // counts the number of player tokens then displays the winner
+    void showWinner() const {
+        // store for the player counts
+        int countX = 0;
+        int countO = 0;
+
+        // iterate over the board to count tokens
+        for (auto it = board.begin(); it != board.end(); ++it) {
+            // the value of the player at that location
+            int value = it->second.getValue();
+            // if value is player X
+            if (value == 1) { 
+                countX++;  // Player X
+            } else if (value == 2) {
+                countO++;  // Player O
+            }
+        }
+        
+        this->printBoard();
+
+        // display player X tokens
+        std::cout << "X: ";
+        for (int i = 0; i < countX; ++i) {
+            std::cout << ". ";
+        }
+        std::cout << std::endl;
+
+        // display player O tokens
+        std::cout << "O: ";
+        for (int i = 0; i < countO; ++i) {
+            std::cout << ". ";
+        }
+        std::cout << std::endl;
+
+        // display the winner or draw
+        if (countX > countO) {
+            std::cout << "Player X wins (" << countX << "-" << countO << ")\n";
+        } else if (countO > countX) {
+            std::cout << "Player O wins (" << countO << "-" << countX << ")\n";
+        } else {
+            std::cout << "It's a draw (" << countX << "-" << countO << ")\n";
+        }
+    }
 
     // get the max board size
     int getMaxBoardSize() const {
@@ -209,5 +253,6 @@ int main() {
         // swap to next player
         currentPlayer = (currentPlayer % 2) + 1;
     }
+    theBoard.showWinner();
     return 0;
 }
