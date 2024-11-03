@@ -4,6 +4,7 @@
 #include <stack>
 #include <limits>
 #include <list>
+#include <set>
 #include <algorithm>
 
 
@@ -114,7 +115,7 @@ public:
     void placePiece(
         const std::pair<int, int>& position, 
         int player, 
-        const std::list<std::pair<int, int>>& toFlip
+        const std::set<std::pair<int, int>>& toFlip
     ) {
         // set the value to 1 or 2 based on the player
         board.at(position).setPiece(player); 
@@ -137,7 +138,7 @@ public:
         std::pair<int, int> position,
         int player,
         std::pair<int, int> direction,
-        std::list<std::pair<int, int>>& toFlip
+        std::set<std::pair<int, int>>& toFlip
     ) const {
         bool piecesToFlip = false;
         // clear the flip list
@@ -159,7 +160,7 @@ public:
 
             if (value == opponent) {
                 // add opponent's piece to the flip path
-                toFlip.push_back(position);
+                toFlip.insert(position);
             } else if (value == player) {
                 // found an anchor piece of the same color
                 // return the negation of toFlip 
@@ -187,9 +188,9 @@ public:
     // if a move is valid its stored in a map
     // the location is used as the key, and the value is a list of the pieces that get flipped
     // this way if the player chooses that move we don't have to recalcuate the flipped pieces
-    std::map<std::pair<int, int>, std::list<std::pair<int, int>>> getValidMoves(int player) const {
+    std::map<std::pair<int, int>, std::set<std::pair<int, int>>> getValidMoves(int player) const {
         // map to store valid moves and flippable pieces
-        std::map<std::pair<int, int>, std::list<std::pair<int, int>>> validMovesMap;  
+        std::map<std::pair<int, int>, std::set<std::pair<int, int>>> validMovesMap;  
         
         // lambda empty check for find_if
         auto isSquareEmpty = [this](const auto& entry) {
@@ -205,16 +206,16 @@ public:
             // current position we check (row, col)
             std::pair<int, int> position = it->first;
             
-            // list to accumulate flippable pieces in all directions
-            std::list<std::pair<int, int>> totalFlippablePieces;
+            // set to accumulate flippable pieces in all directions
+            std::set<std::pair<int, int>> totalFlippablePieces;
 
             // check each direction for flippable pieces
             for (const auto& direction : directions) {
-                // temporary list for the current direction
-                std::list<std::pair<int, int>> toFlip;
+                // temporary set for the current direction
+                std::set<std::pair<int, int>> toFlip;
                 if (findFlippablePieces(position, player, direction, toFlip)) {
                     // add flippable pieces in this direction to the total list
-                    totalFlippablePieces.insert(totalFlippablePieces.end(), toFlip.begin(), toFlip.end());
+                    totalFlippablePieces.insert(toFlip.begin(), toFlip.end());
                 }
             }
 
@@ -324,7 +325,7 @@ bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location
 std::pair<int, int> getPlayerMove(
     int player, Board &theBoard, 
     const std::map<std::pair<int, int>, 
-    std::list<std::pair<int, int>>>& validMoves
+    std::set<std::pair<int, int>>>& validMoves
 ) {
     // error message to print when we clear the screen
     std::string errorMessage;
@@ -407,7 +408,7 @@ int main() {
     
     while (true) {
         // check if there are valid moves for this player
-        std::map<std::pair<int, int>, std::list<std::pair<int, int>>> validMoves = theBoard.getValidMoves(currentPlayer);
+        std::map<std::pair<int, int>, std::set<std::pair<int, int>>> validMoves = theBoard.getValidMoves(currentPlayer);
         if (validMoves.size()==0) {
             // if there are no valid moves we break the loop
             break;
