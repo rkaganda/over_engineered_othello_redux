@@ -3,7 +3,24 @@
 #include <utility>
 #include <stack>
 #include <limits>
+#include <list>
 
+
+// this list is used to store the directions that 
+// we check for anchor points
+const std::list<std::pair<int, int>> directions = {
+    {-1, 0},  // north
+    {1, 0},   // south
+    {0, -1},  // west
+    {0, 1},   // east
+    {-1, -1}, // northwest
+    {-1, 1},  // northeast
+    {1, -1},  // southwest
+    {1, 1}    // southeast
+};
+
+// this struct is used to store player moves
+// in the stack of player history
 struct PlayerMove {
     int thePlayer;
     std::pair<int,int> theLocation;
@@ -14,20 +31,34 @@ struct PlayerMove {
     }
 };
 
+
 class BoardSquare {
 private:
-    // 0 for empty, 1 for player, 2 for player 2
+    // 0 for empty
+    // 1 for player X
+    // 2 for player 0
     int value; 
 
 public:
     // constructor to initialize a square as empty
     BoardSquare() {
         value = 0;
+    } 
+
+    // set the piece, throw an error if the square is already occupied
+    void setPiece(int player) {
+        if (value != 0) {
+            throw std::runtime_error("square is already occupied.");
+        }
+        value = player;
     }
 
-    // set the value
-    void setValue(int player) {
-        value = player;
+    // flip the piece, allowed only if there is already a piece present
+    void flipPiece() {
+        if (value == 0) {
+            throw std::runtime_error("cannot flip an empty square.");
+        }
+        value = (value == 1) ? 2 : 1; // flip between 1 and 2
     }
 
     // get the value
@@ -60,11 +91,61 @@ public:
 
     // places a piece
     void placePiece(const std::pair<int, int>& position, int player) {
-        board.at(position).setValue(player); // set the value to 1 or 2 based on the player
+        board.at(position).setPiece(player); // set the value to 1 or 2 based on the player
     }
 
     int getBoardPlaceValue(const std::pair<int, int>& position) const {
         return board.at(position).getValue();
+    }
+    
+    bool findAnchorInDirection(
+        std::pair<int, int> position,
+        int player,
+        std::pair<int, int> direction,
+        std::list<std::pair<int, int>>& toFlip
+    ) {
+        bool piecesToFlip = false;
+        // clear the flip list
+        toFlip.clear();
+        
+        // get value of opponent
+        int opponent = (player == 1) ? 2 : 1;
+
+        // move to the next position in the specified direction
+        position.first += direction.first;
+        position.second += direction.second;
+
+        // traverse the board in that direction
+        // until we reach the end of the board
+        while (position.first >= 0 && position.first < maxBoardSize &&
+               position.second >= 0 && position.second < maxBoardSize) {
+
+            int value = board[{position.first, position.second}].getValue();
+
+            if (value == opponent) {
+                // add opponent's piece to the flip path
+                toFlip.push_back(position);
+            } else if (value == player) {
+                // found an anchor piece of the same color
+                // return the negation of toFlip 
+                // so if there are pieces to flip this returns true
+                piecesToFlip = !toFlip.empty(); // Only valid if there are pieces to flip
+                break;
+            } else {
+                // Empty square encountered, no anchor in this direction
+                break;
+            }
+
+            // Move to the next position in the specified direction
+            position.first += direction.first;
+            position.second += direction.second;
+        }
+
+        // No anchor piece found in this direction
+        if (!piecesToFlip) {
+            toFlip.clear();   
+        }
+        return piecesToFlip;
     }
 
     // print the board for debugging or display (ASCII representation)
