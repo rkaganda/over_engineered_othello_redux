@@ -98,12 +98,16 @@ public:
         return board.at(position).getValue();
     }
     
-    bool findAnchorInDirection(
+    // use the provided position to check if
+    // there are pieces to flip
+    // populates toFlip with the location of these
+    // returns true if there are pieces to flip
+    bool findFlippablePieces(
         std::pair<int, int> position,
         int player,
         std::pair<int, int> direction,
         std::list<std::pair<int, int>>& toFlip
-    ) {
+    ) const {
         bool piecesToFlip = false;
         // clear the flip list
         toFlip.clear();
@@ -120,7 +124,7 @@ public:
         while (position.first >= 0 && position.first < maxBoardSize &&
                position.second >= 0 && position.second < maxBoardSize) {
 
-            int value = board[{position.first, position.second}].getValue();
+            int value = board.at({position.first, position.second}).getValue();
 
             if (value == opponent) {
                 // add opponent's piece to the flip path
@@ -146,6 +150,59 @@ public:
             toFlip.clear();   
         }
         return piecesToFlip;
+    }
+    
+    // generates all valid moves for a given player based on Othello rules
+    // if a move is valid its stored in a map
+    // the location is used as the key, and the value is a list of the pieces that get flipped
+    // this way if the player chooses that move we don't have to recalcuate the flipped pieces
+    std::map<std::pair<int, int>, std::list<std::pair<int, int>>> getValidMoves(int player) const {
+        // map to store valid moves and flippable pieces
+        std::map<std::pair<int, int>, std::list<std::pair<int, int>>> validMovesMap;  
+
+        // iterate over each position on the board using an iterator
+        for (auto it = board.begin(); it != board.end(); ++it) {
+            // current position (row, col)
+            std::pair<int, int> position = it->first;
+
+            // check if the square is empty
+            if (it->second.isEmpty()) {
+                // list to accumulate flippable pieces in all directions
+                std::list<std::pair<int, int>> totalFlippablePieces;  
+
+                // check each direction for flippable pieces
+                for (const auto& direction : directions) {
+                    // temporary list for the current direction
+                    std::list<std::pair<int, int>> toFlip;  
+                    if (findFlippablePieces(position, player, direction, toFlip)) {
+                        // add flippable pieces in this direction to the total list
+                        totalFlippablePieces.insert(totalFlippablePieces.end(), toFlip.begin(), toFlip.end());
+                    }
+                }
+
+                // if there are any flippable pieces, store the move in the map
+                if (!totalFlippablePieces.empty()) {
+                    validMovesMap[position] = totalFlippablePieces;
+                }
+            }
+        }
+        return validMovesMap;  // return the map of valid moves with their flippable pieces
+    }
+    
+    bool areValidMovesLeftForPlayer(
+        std::stack<PlayerMove> &gameHistory, 
+        int currentPlayer
+    ) {
+        // by default the move is valid
+        bool validMoves = true;
+
+        // if the board is full
+        if (gameHistory.size() >= maxBoardSize * maxBoardSize) {
+            validMoves = false;
+        }
+
+        // return the boolean
+        return validMoves;
     }
 
     // print the board for debugging or display (ASCII representation)
@@ -222,23 +279,6 @@ bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location
         moveValid = false;
     }
     return moveValid;
-}
-
-bool areValidMovesLeftForPlayer(
-    std::stack<PlayerMove> &gameHistory, 
-    Board &theBoard,
-    int currentPlayer
-) {
-    // by default the move is valid
-    bool validMoves = true;
-    
-    // if the board is full
-    if (gameHistory.size() >= theBoard.getMaxBoardSize() * theBoard.getMaxBoardSize()) {
-        validMoves = false;
-    }
-    
-    // return the boolean
-    return validMoves;
 }
 
 std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
@@ -318,7 +358,8 @@ int main() {
     
     while (true) {
         // check if there are valid moves for this player
-        if (!areValidMovesLeftForPlayer(gameHistory, theBoard, currentPlayer)) {
+        std::map<std::pair<int, int>, std::list<std::pair<int, int>>> validMoves = theBoard.getValidMoves(currentPlayer);
+        if (validMoves.size()==0) {
             // if there are no valid moves we break the loop
             break;
         }
