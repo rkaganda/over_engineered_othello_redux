@@ -20,7 +20,7 @@ private:
     int value; 
 
 public:
-    // Constructor to initialize a square as empty
+    // constructor to initialize a square as empty
     BoardSquare() {
         value = 0;
     }
@@ -41,19 +41,19 @@ public:
     }
 };
 
-
 class Board {
 private:
     // map holds the BoardSquares
-    std::map<std::pair<int, int>, BoardSquare> board; 
+    std::map<std::pair<int, int>, BoardSquare> board;
+    int maxBoardSize;
 
 public:
-    // init the board
-    Board() {
-        for (int row = 0; row < 8; ++row) {
-            for (int col = 0; col < 8; ++col) {
+    // init the board with size
+    Board(int size) : maxBoardSize(size) {
+        for (int row = 0; row < maxBoardSize; ++row) {
+            for (int col = 0; col < maxBoardSize; ++col) {
                 // create an empty BoardSquare
-                board[{row, col}] = BoardSquare(); 
+                board[{row, col}] = BoardSquare();
             }
         }
     }
@@ -62,15 +62,15 @@ public:
     void placePiece(const std::pair<int, int>& position, int player) {
         board.at(position).setValue(player); // set the value to 1 or 2 based on the player
     }
-    
+
     int getBoardPlaceValue(const std::pair<int, int>& position) const {
         return board.at(position).getValue();
     }
 
-    // Print the board for debugging or display (ASCII representation)
+    // print the board for debugging or display (ASCII representation)
     void printBoard() const {
-        for (int row = 0; row < 8; ++row) {
-            for (int col = 0; col < 8; ++col) {
+        for (int row = 0; row < maxBoardSize; ++row) {
+            for (int col = 0; col < maxBoardSize; ++col) {
                 int value = getBoardPlaceValue({row, col});
                 if (value == 0)
                     std::cout << ". ";
@@ -82,14 +82,15 @@ public:
             std::cout << std::endl;
         }
     }
+
+    // get the max board size
+    int getMaxBoardSize() const {
+        return maxBoardSize;
+    }
 };
 
 // checks if a move is valid
-bool isPlayerMoveValid(
-    Board &theBoard, 
-    int player, 
-    std::pair<int, int> location
-) {
+bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location) {
     bool moveValid = true;
     int currentValue = theBoard.getBoardPlaceValue(location);
     if (currentValue != 0) {
@@ -106,13 +107,13 @@ bool areValidMovesLeftForPlayer(
     // by default the move is valid
     bool validMoves = true;
     
-    // if 64 moves have been made the board is full
-    if (gameHistory.size() >= 64) {
+    // if the board is full
+    if (gameHistory.size() >= theBoard.getMaxBoardSize() * theBoard.getMaxBoardSize()) {
         validMoves = false;
-    } 
+    }
     
     // return the boolean
-    return validMoves;;
+    return validMoves;
 }
 
 std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
@@ -121,6 +122,7 @@ std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
     
     // the player's move location
     std::pair<int, int> playerMoveLocation;
+    int maxSize = theBoard.getMaxBoardSize();
 
     while (true) {
         // clear the screen and set cursor to the upper left
@@ -154,14 +156,14 @@ std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
         playerMoveLocation.second -= 1;
 
         // check if the row is within bounds
-        if (playerMoveLocation.first < 0 || playerMoveLocation.first >= 8) {
+        if (playerMoveLocation.first < 0 || playerMoveLocation.first >= maxSize) {
             errorMessage = "Invalid row: " + std::to_string(playerMoveLocation.first + 1);
             errorMessage += (playerMoveLocation.first < 0) ? " (too small)." : " (too large).";
             continue;
         }
 
         // check if the column is within bounds
-        if (playerMoveLocation.second < 0 || playerMoveLocation.second >= 8) {
+        if (playerMoveLocation.second < 0 || playerMoveLocation.second >= maxSize) {
             errorMessage = "Invalid column: " + std::to_string(playerMoveLocation.second + 1);
             errorMessage += (playerMoveLocation.second < 0) ? " (too small)." : " (too large).";
             continue;
@@ -179,10 +181,14 @@ std::pair<int, int> getPlayerMove(int player, Board &theBoard) {
     }
 }
 
-
 int main() {
     int currentPlayer = 1;
-    Board theBoard = Board();
+    int maxBoardSize;
+    
+    std::cout << "Enter board size: ";
+    std::cin >> maxBoardSize;
+    
+    Board theBoard(maxBoardSize);
     std::stack<PlayerMove> gameHistory;
     
     while (true) {
@@ -191,7 +197,7 @@ int main() {
             // if there are no valid moves we break the loop
             break;
         }
-        // get the a valid move for this player
+        // get a valid move for this player
         std::pair<int, int> playerMove = getPlayerMove(currentPlayer, theBoard);
         
         // place the piece
@@ -202,7 +208,6 @@ int main() {
         
         // swap to next player
         currentPlayer = (currentPlayer % 2) + 1;
-        
     }
     return 0;
 }
