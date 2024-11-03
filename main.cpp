@@ -120,9 +120,9 @@ public:
         board.at(position).setPiece(player); 
         
         // flip each piece in the list
-        for (const auto& flipPosition : toFlip) {
+        std::for_each(toFlip.begin(), toFlip.end(), [this](const auto& flipPosition) {
             board.at(flipPosition).flipPiece();
-        }
+        });
     }
 
     int getBoardPlaceValue(const std::pair<int, int>& position) const {
@@ -206,12 +206,12 @@ public:
             std::pair<int, int> position = it->first;
             
             // list to accumulate flippable pieces in all directions
-            std::list<std::pair<int, int>> totalFlippablePieces;  
+            std::list<std::pair<int, int>> totalFlippablePieces;
 
             // check each direction for flippable pieces
             for (const auto& direction : directions) {
                 // temporary list for the current direction
-                std::list<std::pair<int, int>> toFlip;  
+                std::list<std::pair<int, int>> toFlip;
                 if (findFlippablePieces(position, player, direction, toFlip)) {
                     // add flippable pieces in this direction to the total list
                     totalFlippablePieces.insert(totalFlippablePieces.end(), toFlip.begin(), toFlip.end());
@@ -396,8 +396,9 @@ int getBoardSize() {
 }
 
 int main() {
-    // starting player
+    // players
     int currentPlayer = 1;
+    int nextPlayer = 2;
     // get the board size
     int maxBoardSize = getBoardSize();  
     
@@ -421,7 +422,7 @@ int main() {
         gameHistory.push(PlayerMove(currentPlayer, playerMove));
         
         // swap to next player
-        currentPlayer = (currentPlayer % 2) + 1;
+        std::swap(currentPlayer, nextPlayer);
     }
     theBoard.showWinner();
     return 0;
