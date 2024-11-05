@@ -1,0 +1,7 @@
+
+.dep.inc
+build/
+dist/
+.gitignore
+nbproject/
+Makefile
