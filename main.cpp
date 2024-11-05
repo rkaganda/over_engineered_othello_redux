@@ -354,6 +354,17 @@ public:
     // returns:
     // void - does not return a value
     void showWinner() const {
+        // iterate over the board player TWICE to count X and O
+        // NOTE: its more efficent to use for here iterate once
+        // but count is used due to project requirements
+        int countX = std::count_if(board.begin(), board.end(), [](const auto& pair) {
+            return pair.second.getValue() == 1;
+        });
+        int countO = std::count_if(board.begin(), board.end(), [](const auto& pair) {
+            return pair.second.getValue() == 2;
+        });
+        
+        /*
         // store for the player counts
         int countX = 0;
         int countO = 0;
@@ -369,6 +380,7 @@ public:
                 countO++;  // Player O
             }
         }
+        */
         
         this->printBoard();
 
