@@ -101,7 +101,7 @@ getValidMoves(player) {
     
     Return validMovesMap with all valid moves and flippable pieces.   
 }
-
+```
 
 Class UML:  
 ![Othello Classes](./othello_classes.png)
