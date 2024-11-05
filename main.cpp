@@ -1,3 +1,16 @@
+/***********************************************************************************
+ * Over-Engineered Othello
+ * 
+ * Author: Rukundo Kaganda (rkaganda@gmail.com)
+ * Date: 11/4/2024
+ * 
+ * Description:
+ * - An implementation of Othello for 2 players 
+ *   or 1 player and an "AI" opponent,
+ *   with variable board size and optional move assistance.
+ * 
+ ***********************************************************************************/
+
 #include <iostream>
 #include <map>
 #include <utility>
@@ -677,8 +690,8 @@ bool getPlayAgain() {
 }
 
 
-// prints the rules of Othello 
-// provides players with an overview of the game objectives, piece placement, 
+// prints the rules of Othello
+// provides players with an overview of the game objectives, piece placement,
 // flipping mechanics, and victory conditions
 //
 // parameters:
