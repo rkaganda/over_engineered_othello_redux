@@ -652,7 +652,41 @@ bool getMoveAssist() {
 }
 
 
-int main() {
+// prompts the user to decide if they want to play again
+// repeatedly asks for input until the user enters 'y' (yes) or 'n' (no)
+//
+// parameters:
+// none
+//
+// returns:
+// bool - true if the user chooses 'y' to play again,
+//        false if the user chooses 'n' to stop playing
+
+bool getPlayAgain() {
+    char choice;
+    do {
+        std::cout << "Do you want to play again? (Y/N): ";
+        std::cin >> choice;
+        // convert input to uppercase for comparison
+        choice = std::toupper(choice);
+        if (choice != 'Y' && choice != 'N') {
+            std::cout << "Please enter 'Y' or 'N'.\n";
+        }
+    } while (choice != 'Y' && choice != 'N');
+    return choice == 'Y';
+}
+
+
+// manages a single game session, setting up the board, prompting moves, 
+// checking for valid moves, and determining the game outcome
+//
+// parameters:
+// none
+//
+// returns:
+// void - does not return a value
+
+void playGame() {
     // players
     int currentPlayer = 1;
     int nextPlayer = 2;
@@ -729,5 +763,20 @@ int main() {
     
     // count the X and O and display the winner
     theBoard.showWinner();
+}
+
+
+int main() {
+    do {
+        // clear the screen and set cursor to the upper left
+        // ANSI escape codes
+        // clear the screen \033[2J
+        // reset cursor \033[H
+        std::cout << "\033[2J\033[H"; 
+        // start a new game
+        playGame();
+    } while (getPlayAgain());  // check if player wants to play again
+    
+    std::cout << "Thanks for playing." << std::endl;
     return 0;
 }
