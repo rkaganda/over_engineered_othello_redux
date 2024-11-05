@@ -6,6 +6,10 @@
 #include <list>
 #include <set>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
+#include <queue>
+#include <string>
 
 
 // this list is used to store the directions that 
@@ -312,6 +316,17 @@ public:
     }
 };
 
+
+void printPossibleMoves(std::map<std::pair<int, int>, std::set<std::pair<int, int>>> validMoves) {
+    for (const auto& move : validMoves) {
+        std::pair<int, int> key = move.first;
+        int setSize = move.second.size();
+        std::cout << "Move (" << key.first+1 << ", " << key.second+1 << ") has " << setSize << " possible flip(s).\n";
+    }
+}
+
+
+
 // checks if a move is valid
 bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location) {
     bool moveValid = true;
@@ -325,7 +340,9 @@ bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location
 std::pair<int, int> getPlayerMove(
     int player, Board &theBoard, 
     const std::map<std::pair<int, int>, 
-    std::set<std::pair<int, int>>>& validMoves
+    std::set<std::pair<int, int>>>& validMoves,
+    std::string prevMessage,
+    bool moveAssistOn
 ) {
     // error message to print when we clear the screen
     std::string errorMessage;
@@ -338,9 +355,14 @@ std::pair<int, int> getPlayerMove(
         // clear the screen \033[2J
         // reset cursor \033[H
         std::cout << "\033[2J\033[H"; 
+        std::cout << prevMessage << "\n";
         // print X or O for the player
         std::cout << "Player " << (player == 1 ? "X" : "O") << "'s turn.\n";
         theBoard.printBoard();
+        
+        if (moveAssistOn) {
+            printPossibleMoves(validMoves);
+        }
 
         // print the error message if there is one
         if (!errorMessage.empty()) {
@@ -384,6 +406,56 @@ std::pair<int, int> getPlayerMove(
 }
 
 
+// picks a move from validMovies
+// either picks the move with the most flips using prio queue
+// or picks a move at random using a random iterator
+std::pair<int, int> getAIMove(const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves) {
+    // list to store moves with the count of pieces flipped
+    std::list<std::pair<int, std::pair<int, int>>> moves;
+    
+    // the move
+    std::pair<int, int> aiMove;
+    
+    // insert each move with its flip count into the list
+    for (const auto& move : validMoves) {
+        // count of pieces to flip for this move
+        int flipCount = move.second.size(); 
+        // push the move and flip count to the list
+        moves.push_back({flipCount, move.first});
+    }
+
+    // sort the list in descending order based on flip count (largest flips in front)
+    moves.sort([](const std::pair<int, std::pair<int, int>>& a, const std::pair<int, std::pair<int, int>>& b) {
+        // sort by flip count in descending order
+        return a.first > b.first; 
+    });
+
+    // priority queue to store sorted moves (best move at the top)
+    std::priority_queue<std::pair<int, std::pair<int, int>>> moveQueue;
+
+    // push sorted moves into the priority queue
+    for (const auto& move : moves) {
+        moveQueue.push(move);
+    }
+
+    // initialize random seed
+    std::srand(std::time(0));
+
+    // 50/50 to either pick the move frop the top of the prio queue
+    /// or choose a move using a random iterator
+    if (std::rand() % 2 == 0) {
+        // pick a random move using a random iterator
+        auto randomIt = std::next(moves.begin(), std::rand() % moves.size());
+        aiMove = randomIt->second;
+    } else {
+        // pick the move from the top of the priority queue
+        aiMove = moveQueue.top().second;
+    }
+    
+    // return the move
+    return aiMove;
+}
+
 int getBoardSize() {
     int size;
     do {
@@ -396,25 +468,93 @@ int getBoardSize() {
     return size;
 }
 
+
+int getPlayerCount() {
+    int playerCount;
+    do {
+        std::cout << "How many players (1 or 2): ";
+        std::cin >> playerCount;
+        if (playerCount < 1 || playerCount > 2) {
+            std::cout << "Either 1 or 2 players. Please try again.\n";
+        }
+    } while (playerCount < 1 || playerCount > 2);
+    return playerCount;
+}
+
+bool getMoveAssist() {
+    char choice;
+    do {
+        std::cout << "Do you want move assist on? (Y/N): ";
+        std::cin >> choice;
+        // convert input to uppercase to compare
+        choice = std::toupper(choice);
+        if (choice != 'Y' && choice != 'N') {
+            std::cout << "Please enter 'Y' or 'N'.\n";
+        }
+    } while (choice != 'Y' && choice != 'N');
+    return choice == 'Y';
+}
+
+
 int main() {
     // players
     int currentPlayer = 1;
     int nextPlayer = 2;
     // get the board size
-    int maxBoardSize = getBoardSize();  
+    int maxBoardSize = getBoardSize(); 
+    // get player count
+    int playerCount = getPlayerCount();
+    bool moveAssistOn = getMoveAssist();
+    // valid move
+    bool prevPlayerMoved = true;
+    
+    // prev message
+    std::string prevMessage = "Player X goes first.";
+    
     
     Board theBoard(maxBoardSize);
     std::stack<PlayerMove> gameHistory;
     
     while (true) {
+        std::cout << prevPlayerMoved << std::endl;
+        std::cout << "checking for player " << (currentPlayer == 1 ? "X" : "O") << std::endl;
         // check if there are valid moves for this player
         std::map<std::pair<int, int>, std::set<std::pair<int, int>>> validMoves = theBoard.getValidMoves(currentPlayer);
+        
         if (validMoves.size()==0) {
-            // if there are no valid moves we break the loop
-            break;
+            // if the prev player didn't move
+            if (!prevPlayerMoved) {
+                // this means neither player has valid moves and the game is over
+                prevMessage = "Neither player has valid moves, the game is over!";
+                break;
+            }
+            // if there are no valid moves we go to the next player
+            prevMessage = "Player " + std::string(currentPlayer == 1 ? "X" : "O") + " has no valid moves!";
+            // the previous player was unable to move so we set the flag
+            prevPlayerMoved = false;
+            // swap to the next player
+            std::swap(currentPlayer, nextPlayer);
+            continue;
         }
-        // get a valid move for this player
-        std::pair<int, int> playerMove = getPlayerMove(currentPlayer, theBoard, validMoves);
+        
+        // where we store the move for this player
+        std::pair<int, int> playerMove;
+        
+        // check if its the second players move
+        // and if we have an ai opponent
+        if (currentPlayer == 2 && playerCount == 1) {
+            // get the move from the "AI"
+            playerMove = getAIMove(validMoves);
+        }else {
+            // get a valid move for human player
+            playerMove = getPlayerMove(currentPlayer, theBoard, validMoves, prevMessage, moveAssistOn);
+        }
+        // the previous player moved
+        prevPlayerMoved = true; 
+        // update the message
+        prevMessage = "Player " + std::string(currentPlayer == 1 ? "X" : "O") + 
+                " placed piece @(" + std::to_string(playerMove.first+1) + "," + 
+                std::to_string(playerMove.second+1) + ")";
         
         // place the piece, pass pieces to be flipped
         theBoard.placePiece(playerMove, currentPlayer, validMoves.at(playerMove));
@@ -425,6 +565,7 @@ int main() {
         // swap to next player
         std::swap(currentPlayer, nextPlayer);
     }
+    std::cout << prevMessage << std::endl;
     theBoard.showWinner();
     return 0;
 }
