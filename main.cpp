@@ -5,12 +5,11 @@
  * Date: 11/4/2024
  * 
  * Description:
- * - An implementation of Othello for 2 players 
- *   or 1 player and an "AI" opponent,
- *   with variable board size and optional move assistance.
+ * - An implementation of Othello with for 2 players 
+ *   or 1 player and "AI" opponent,
+ *   with varible board size and, optional move assistance.
  * 
  ***********************************************************************************/
-
 #include <iostream>
 #include <map>
 #include <utility>
@@ -271,7 +270,8 @@ public:
         auto it = board.begin();
 
         // iterate using find_if so we dont enter the loop
-        // until iterator reached board.end
+        // if the square is empty
+        // loops until iterator reached board.end
         while((it = std::find_if(it, board.end(), isSquareEmpty)) != board.end()) {
             // current position we check (row, col)
             std::pair<int, int> position = it->first;
