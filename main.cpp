@@ -677,6 +677,38 @@ bool getPlayAgain() {
 }
 
 
+// prints the rules of Othello 
+// provides players with an overview of the game objectives, piece placement, 
+// flipping mechanics, and victory conditions
+//
+// parameters:
+// none
+//
+// returns:
+// void - does not return a value
+
+void printRules() {
+    std::cout << "\033[2J\033[H"; // Clear screen and reset cursor
+    std::cout << "Othello Game Rules:\n\n";
+    std::cout << "1. Objective:\n";
+    std::cout << "   - The goal is to have the most pieces of your color on the board when no moves remain.\n";
+    std::cout << "   - Player X ('X') and Player O ('O') alternate turns, placing pieces on the board.\n\n";
+    std::cout << "2. Piece Placement:\n";
+    std::cout << "   - On your turn, place a piece on an empty square to trap one or more of your opponent's pieces\n";
+    std::cout << "     in any direction (horizontal, vertical, or diagonal).\n\n";
+    std::cout << "3. Flipping Pieces:\n";
+    std::cout << "   - All opponent's pieces trapped between your new piece and any of your existing pieces will flip\n";
+    std::cout << "     to your color.\n";
+    std::cout << "   - To be valid, a move must flip at least one of your opponent's pieces.\n\n";
+    std::cout << "4. Game End:\n";
+    std::cout << "   - The game ends when neither player has a valid move remaining.\n";
+    std::cout << "   - The player with the most pieces of their color on the board at the end of the game wins.\n";
+    std::cout << "   - If both players have the same number of pieces, the game is a draw.\n\n";
+    std::cout << "Press Enter to continue...";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Wait for user input
+}
+
+
 // manages a single game session, setting up the board, prompting moves, 
 // checking for valid moves, and determining the game outcome
 //
@@ -767,6 +799,7 @@ void playGame() {
 
 
 int main() {
+    printRules();
     do {
         // clear the screen and set cursor to the upper left
         // ANSI escape codes
