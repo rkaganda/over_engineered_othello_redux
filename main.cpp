@@ -12,8 +12,9 @@
 #include <string>
 
 
-// this list is used to store the directions that 
-// we check for anchor points
+// list of directions used to check for flippable pieces around a position on the board
+// each pair represents a direction (e.g., {-1, 0} is north, {1, 1} is southeast)
+// used to check for anchor points
 const std::list<std::pair<int, int>> directions = {
     {-1, 0},  // north
     {1, 0},   // south
@@ -25,8 +26,8 @@ const std::list<std::pair<int, int>> directions = {
     {1, 1}    // southeast
 };
 
-// this struct is used to store player moves
-// in the stack of player history
+// struct to store player moves, 
+// used in the game history stack
 struct PlayerMove {
     int thePlayer;
     std::pair<int,int> theLocation;
@@ -37,7 +38,8 @@ struct PlayerMove {
     }
 };
 
-
+// class representing a single square on the board
+// which can be empty or occupied by a player
 class BoardSquare {
 private:
     // 0 for empty
@@ -51,7 +53,13 @@ public:
         value = 0;
     } 
 
-    // set the piece, throw an error if the square is already occupied
+    // sets a piece for the specified player, throws an error if the square is already occupied
+    //
+    // parameters:
+    // int player - the player placing a piece (1 for 'X', 2 for 'O')
+    //
+    // throws:
+    // std::runtime_error if the square is already occupied
     void setPiece(int player) {
         if (value != 0) {
             throw std::runtime_error("square is already occupied.");
@@ -59,7 +67,11 @@ public:
         value = player;
     }
 
-    // flip the piece, allowed only if there is already a piece present
+    // flips the piece on the square (from 'X' to 'O' or vice versa),
+    // throws an error if the square is empty
+    //
+    // throws:
+    // std::runtime_error if the square is empty
     void flipPiece() {
         if (value == 0) {
             throw std::runtime_error("cannot flip an empty square.");
@@ -67,12 +79,18 @@ public:
         value = (value == 1) ? 2 : 1; // flip between 1 and 2
     }
 
-    // get the value
+    // retrieves the value of the square
+    //
+    // returns:
+    // int - the value of the square (0 for empty, 1 for 'X', 2 for 'O')
     int getValue() const {
         return value;
     }
 
-    // check if the square is empty
+    // checks if the square is empty
+    //
+    // returns:
+    // bool - true if the square is empty, false otherwise
     bool isEmpty() const {
         return value == 0;
     }
@@ -85,7 +103,14 @@ private:
     int maxBoardSize;
 
 public:
-    // init the board with a given size
+    // initializes the board with a given size
+    // sets up an empty board, ensuring the size is at least 4x4, and places starting pieces at the center
+    //
+    // parameters:
+    // int size - the size of the board (must be at least 4)
+    //
+    // throws:
+    // std::invalid_argument if the board size is less than 4
     Board(int size) : maxBoardSize(size) {
         // check for invalid board
         if (size < 4) {
@@ -115,7 +140,16 @@ public:
         }
     }
 
-    // places a piece
+    // places a piece on the board at the specified location for a given player
+    // flips the pieces in the set of positions provided
+    //
+    // parameters:
+    // const std::pair<int, int>& position - the position to place the piece
+    // int player - the player number (1 for 'X', 2 for 'O')
+    // const std::set<std::pair<int, int>>& toFlip - the set of positions to flip after placing the piece
+    //
+    // returns:
+    // void - does not return a value
     void placePiece(
         const std::pair<int, int>& position, 
         int player, 
@@ -129,15 +163,29 @@ public:
             board.at(flipPosition).flipPiece();
         });
     }
-
+    
+    // retrieves the value at a specified board position
+    //
+    // parameters:
+    // const std::pair<int, int>& position - the position on the board
+    //
+    // returns:
+    // int - the value at the specified position (0 for empty, 1 for 'X', 2 for 'O')
     int getBoardPlaceValue(const std::pair<int, int>& position) const {
         return board.at(position).getValue();
     }
     
-    // use the provided position to check if
-    // there are pieces to flip
-    // populates toFlip with the location of these
-    // returns true if there are pieces to flip
+    // checks if there are pieces to flip in a given direction for a move by the specified player
+    // if there are, populates 'toFlip' with the locations of those pieces
+    //
+    // parameters:
+    // std::pair<int, int> position - the starting position for checking flips
+    // int player - the player number (1 for 'X', 2 for 'O')
+    // std::pair<int, int> direction - the direction to check for flippable pieces
+    // std::set<std::pair<int, int>>& toFlip - a set to populate with flippable positions
+    //
+    // returns:
+    // bool - true if there are pieces to flip, false otherwise
     bool findFlippablePieces(
         std::pair<int, int> position,
         int player,
@@ -189,9 +237,14 @@ public:
     }
     
     // generates all valid moves for a given player based on Othello rules
-    // if a move is valid its stored in a map
-    // the location is used as the key, and the value is a list of the pieces that get flipped
-    // this way if the player chooses that move we don't have to recalcuate the flipped pieces
+    // stores each valid move and its corresponding flippable pieces in a map
+    //
+    // parameters:
+    // int player - the player number (1 for 'X', 2 for 'O')
+    //
+    // returns:
+    // std::map<std::pair<int, int>, std::set<std::pair<int, int>>> - a map of valid moves
+    // where each key is a board position and the associated value is a set of positions that would be flipped
     std::map<std::pair<int, int>, std::set<std::pair<int, int>>> getValidMoves(int player) const {
         // map to store valid moves and flippable pieces
         std::map<std::pair<int, int>, std::set<std::pair<int, int>>> validMovesMap;  
@@ -234,6 +287,14 @@ public:
         return validMovesMap;  // return the map of valid moves with their flippable pieces
     }
     
+    // checks if there are valid moves left for the current player
+    //
+    // parameters:
+    // std::stack<PlayerMove>& gameHistory - a stack representing the history of moves in the game
+    // int currentPlayer - the current player's number (1 for 'X', 2 for 'O')
+    //
+    // returns:
+    // bool - true if there are valid moves left, false otherwise
     bool areValidMovesLeftForPlayer(
         std::stack<PlayerMove> &gameHistory, 
         int currentPlayer
@@ -250,7 +311,13 @@ public:
         return validMoves;
     }
 
-    // print the board for debugging or display (ASCII representation)
+    // prints the board in ASCII format, showing 'X', 'O', and '.' for empty spaces
+    //
+    // parameters:
+    // none
+    //
+    // returns:
+    // void - does not return a value
     void printBoard() const {
         for (int row = 0; row < maxBoardSize; ++row) {
             for (int col = 0; col < maxBoardSize; ++col) {
@@ -266,7 +333,13 @@ public:
         }
     }
     
-    // counts the number of player tokens then displays the winner
+    // counts the tokens for each player and displays the winner or if the game is a draw
+    //
+    // parameters:
+    // none
+    //
+    // returns:
+    // void - does not return a value
     void showWinner() const {
         // store for the player counts
         int countX = 0;
@@ -310,12 +383,30 @@ public:
         }
     }
 
-    // get the max board size
+    // retrieves the maximum size of the board
+    //
+    // parameters:
+    // none
+    //
+    // returns:
+    // int - the maximum size of the board
     int getMaxBoardSize() const {
         return maxBoardSize;
     }
 };
 
+
+// prints all possible moves and their corresponding flip counts
+// displays each valid move location and the number of pieces that would be flipped
+//
+// parameters:
+// std::map<std::pair<int, int>, std::set<std::pair<int, int>>> validMoves
+//                                - a map of valid moves where each key is a board position 
+//                                  and the associated value is a set of positions that would 
+//                                  be flipped by that move
+//
+// returns:
+// void - does not return a value
 
 void printPossibleMoves(std::map<std::pair<int, int>, std::set<std::pair<int, int>>> validMoves) {
     for (const auto& move : validMoves) {
@@ -326,8 +417,17 @@ void printPossibleMoves(std::map<std::pair<int, int>, std::set<std::pair<int, in
 }
 
 
+// checks if the player's move is valid by ensuring the chosen location is empty
+//
+// parameters:
+// Board& theBoard                 - reference to the game board object
+// int player                       - the player number (1 for 'X', 2 for 'O')
+// std::pair<int, int> location     - the coordinates of the move location on the board
+//
+// returns:
+// bool                             - true if the move is valid (location is empty), 
+//                                    false otherwise
 
-// checks if a move is valid
 bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location) {
     bool moveValid = true;
     int currentValue = theBoard.getBoardPlaceValue(location);
@@ -337,11 +437,28 @@ bool isPlayerMoveValid(Board &theBoard, int player, std::pair<int, int> location
     return moveValid;
 }
 
+
+// gets the player's move, ensuring it is within bounds and valid
+// repeatedly prompts for input until a valid move is entered
+// clears the screen, displays the board, and provides move assistance if enabled
+//
+// parameters:
+// int player                       - the player number (1 for 'X', 2 for 'O')
+// Board& theBoard                  - reference to the game board object
+// const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves
+//                                   - map of valid moves, with each key as a board 
+//                                     position and the associated value as positions to flip
+// std::string statusMessage          - message to display from the previous turn
+// bool moveAssistOn                - indicates if move assistance is enabled
+//
+// returns:
+// std::pair<int, int>              - coordinates of the player's chosen move (row, column)
+
 std::pair<int, int> getPlayerMove(
     int player, Board &theBoard, 
     const std::map<std::pair<int, int>, 
     std::set<std::pair<int, int>>>& validMoves,
-    std::string prevMessage,
+    std::string statusMessage,
     bool moveAssistOn
 ) {
     // error message to print when we clear the screen
@@ -355,7 +472,7 @@ std::pair<int, int> getPlayerMove(
         // clear the screen \033[2J
         // reset cursor \033[H
         std::cout << "\033[2J\033[H"; 
-        std::cout << prevMessage << "\n";
+        std::cout << statusMessage << "\n";
         // print X or O for the player
         std::cout << "Player " << (player == 1 ? "X" : "O") << "'s turn.\n";
         theBoard.printBoard();
@@ -406,9 +523,18 @@ std::pair<int, int> getPlayerMove(
 }
 
 
-// picks a move from validMovies
-// either picks the move with the most flips using prio queue
-// or picks a move at random using a random iterator
+// selects an ai move from the list of valid moves, aiming for the move with the highest flips
+// has a 50/50 chance of choosing either the best move or a random valid move
+//
+// parameters:
+// const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves
+//                                 - a map of valid moves where each key is a board position 
+//                                   and the associated value is a set of positions that would 
+//                                   be flipped by that move
+//
+// returns:
+// std::pair<int, int>             - the coordinates (row, column) of the selected ai move
+
 std::pair<int, int> getAIMove(const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves) {
     // list to store moves with the count of pieces flipped
     std::list<std::pair<int, std::pair<int, int>>> moves;
@@ -456,6 +582,16 @@ std::pair<int, int> getAIMove(const std::map<std::pair<int, int>, std::set<std::
     return aiMove;
 }
 
+
+// prompts the user to enter the board size with a minimum value of 4
+// repeatedly asks for input until the user enters a valid size (4 or greater)
+//
+// parameters:
+// none
+//
+// returns:
+// int - the board size entered by the user (an integer 4 or greater)
+
 int getBoardSize() {
     int size;
     do {
@@ -469,6 +605,15 @@ int getBoardSize() {
 }
 
 
+// prompts the user to enter the number of players (either 1 or 2)
+// repeatedly asks for input until the user enters 1 or 2
+//
+// parameters:
+// none
+//
+// returns:
+// int - the number of players entered by the user (either 1 or 2)
+
 int getPlayerCount() {
     int playerCount;
     do {
@@ -480,6 +625,17 @@ int getPlayerCount() {
     } while (playerCount < 1 || playerCount > 2);
     return playerCount;
 }
+
+
+// prompts the user to enable or disable the move assist feature
+// repeatedly asks for input until the user enters 'y' (yes) or 'n' (no)
+//
+// parameters:
+// none
+//
+// returns:
+// bool - true if the user chooses 'y' to enable move assist, 
+//        false if the user chooses 'n' to disable it
 
 bool getMoveAssist() {
     char choice;
@@ -509,15 +665,13 @@ int main() {
     bool prevPlayerMoved = true;
     
     // prev message
-    std::string prevMessage = "Player X goes first.";
+    std::string statusMessage = "Player X goes first.";
     
     
     Board theBoard(maxBoardSize);
     std::stack<PlayerMove> gameHistory;
     
     while (true) {
-        std::cout << prevPlayerMoved << std::endl;
-        std::cout << "checking for player " << (currentPlayer == 1 ? "X" : "O") << std::endl;
         // check if there are valid moves for this player
         std::map<std::pair<int, int>, std::set<std::pair<int, int>>> validMoves = theBoard.getValidMoves(currentPlayer);
         
@@ -525,15 +679,19 @@ int main() {
             // if the prev player didn't move
             if (!prevPlayerMoved) {
                 // this means neither player has valid moves and the game is over
-                prevMessage = "Neither player has valid moves, the game is over!";
+                statusMessage = "Neither player has valid moves, the game is over!";
                 break;
             }
             // if there are no valid moves we go to the next player
-            prevMessage = "Player " + std::string(currentPlayer == 1 ? "X" : "O") + " has no valid moves!";
+            statusMessage = "Player " + std::string(currentPlayer == 1 ? "X" : "O") + " has no valid moves!";
+            
             // the previous player was unable to move so we set the flag
             prevPlayerMoved = false;
+            
             // swap to the next player
             std::swap(currentPlayer, nextPlayer);
+            
+            // contine the while loop for the next player
             continue;
         }
         
@@ -547,12 +705,13 @@ int main() {
             playerMove = getAIMove(validMoves);
         }else {
             // get a valid move for human player
-            playerMove = getPlayerMove(currentPlayer, theBoard, validMoves, prevMessage, moveAssistOn);
+            playerMove = getPlayerMove(currentPlayer, theBoard, validMoves, statusMessage, moveAssistOn);
         }
         // the previous player moved
         prevPlayerMoved = true; 
+        
         // update the message
-        prevMessage = "Player " + std::string(currentPlayer == 1 ? "X" : "O") + 
+        statusMessage = "Player " + std::string(currentPlayer == 1 ? "X" : "O") + 
                 " placed piece @(" + std::to_string(playerMove.first+1) + "," + 
                 std::to_string(playerMove.second+1) + ")";
         
@@ -565,7 +724,10 @@ int main() {
         // swap to next player
         std::swap(currentPlayer, nextPlayer);
     }
-    std::cout << prevMessage << std::endl;
+    // display the statusMessage
+    std::cout << statusMessage << std::endl;
+    
+    // count the X and O and display the winner
     theBoard.showWinner();
     return 0;
 }
