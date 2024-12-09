@@ -9,19 +9,19 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=Cygwin-Windows
 CND_ARTIFACT_DIR_Debug=dist/Debug/Cygwin-Windows
-CND_ARTIFACT_NAME_Debug=project_1_monopoly_rkaganda
-CND_ARTIFACT_PATH_Debug=dist/Debug/Cygwin-Windows/project_1_monopoly_rkaganda
+CND_ARTIFACT_NAME_Debug=project_2_othello_rkaganda
+CND_ARTIFACT_PATH_Debug=dist/Debug/Cygwin-Windows/project_2_othello_rkaganda
 CND_PACKAGE_DIR_Debug=dist/Debug/Cygwin-Windows/package
-CND_PACKAGE_NAME_Debug=project1monopolyrkaganda.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/Cygwin-Windows/package/project1monopolyrkaganda.tar
+CND_PACKAGE_NAME_Debug=project2othellorkaganda.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/Cygwin-Windows/package/project2othellorkaganda.tar
 # Release configuration
 CND_PLATFORM_Release=MinGW-Windows
 CND_ARTIFACT_DIR_Release=dist/Release/MinGW-Windows
-CND_ARTIFACT_NAME_Release=project_1_monopoly_rkaganda
-CND_ARTIFACT_PATH_Release=dist/Release/MinGW-Windows/project_1_monopoly_rkaganda
+CND_ARTIFACT_NAME_Release=project_2_othello_rkaganda
+CND_ARTIFACT_PATH_Release=dist/Release/MinGW-Windows/project_2_othello_rkaganda
 CND_PACKAGE_DIR_Release=dist/Release/MinGW-Windows/package
-CND_PACKAGE_NAME_Release=project1monopolyrkaganda.tar
-CND_PACKAGE_PATH_Release=dist/Release/MinGW-Windows/package/project1monopolyrkaganda.tar
+CND_PACKAGE_NAME_Release=project2othellorkaganda.tar
+CND_PACKAGE_PATH_Release=dist/Release/MinGW-Windows/package/project2othellorkaganda.tar
 #
 # include compiler specific variables
 #

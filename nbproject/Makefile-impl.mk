@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=Project 1_monopoly_rkaganda
+PROJECTNAME=Project 2_othello_rkaganda
 
 # Active Configuration
 DEFAULTCONF=Debug

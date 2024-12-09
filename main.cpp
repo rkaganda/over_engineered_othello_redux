@@ -23,6 +23,9 @@
 #include <queue>
 #include <string>
 
+// include avttree implementation
+#include "AVLTree.h"
+
 
 // list of directions used to check for flippable pieces around a position on the board
 // each pair represents a direction (e.g., {-1, 0} is north, {1, 1} is southeast)
@@ -548,63 +551,154 @@ std::pair<int, int> getPlayerMove(
 }
 
 
-// selects an ai move from the list of valid moves, aiming for the move with the highest flips
-// has a 50/50 chance of choosing either the best move or a random valid move
+// populates the AVL tree with moves and their scores based on valid moves
+// each move's score is calculated as ai_flips - max(player_flips) and used as the key
+// player_flips represents the maximum flips the opponent could achieve in response
 //
 // parameters:
-// const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves
-//                                 - a map of valid moves where each key is a board position 
-//                                   and the associated value is a set of positions that would 
-//                                   be flipped by that move
+// AVLTree<std::pair<int, std::pair<int, int>>>& moveTree - the AVL tree to populate with moves
+// const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves - a map of valid moves and their corresponding flips
+// Board& board - the current game board used to simulate potential moves
+// int currentPlayer - the current player's identifier (1 for X, 2 for O)
 //
 // returns:
-// std::pair<int, int>             - the coordinates (row, column) of the selected ai move
+// none
 
-std::pair<int, int> getAIMove(const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves) {
-    // list to store moves with the count of pieces flipped
-    std::list<std::pair<int, std::pair<int, int>>> moves;
-    
-    // the move
-    std::pair<int, int> aiMove;
-    
-    // insert each move with its flip count into the list
+void populateMoveTree(
+    AVLTree<std::pair<int, std::pair<int, int>>>& moveTree,
+    const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves,
+    Board& board,
+    int currentPlayer
+) {
+    int opponent = (currentPlayer == 1) ? 2 : 1;
+
     for (const auto& move : validMoves) {
-        // count of pieces to flip for this move
-        int flipCount = move.second.size(); 
-        // push the move and flip count to the list
-        moves.push_back({flipCount, move.first});
+        // simulate board after move
+        Board simulatedBoard = board;
+        simulatedBoard.placePiece(move.first, currentPlayer, move.second);
+
+        // calculate ai flips
+        int aiFlips = move.second.size();
+
+        // get valid moves for opponent
+        auto opponentMoves = simulatedBoard.getValidMoves(opponent);
+
+        // calculate the number of flips the opponent can do
+        int playerFlips = 0;
+        for (const auto& opponentMove : opponentMoves) {
+            playerFlips = std::max(playerFlips, static_cast<int>(opponentMove.second.size()));
+        }
+
+        // score is aiFlips - opponentFlips
+        int score = aiFlips - playerFlips;
+
+        // insert into tree
+        moveTree.insert({score, move.first});
+    }
+}
+
+// finds the move with the highest score in the AVL tree by traversing to the rightmost node
+//
+// parameters:
+// AVLNode<std::pair<int, std::pair<int, int>>>* root - the root node of the AVL tree
+//
+// returns:
+// std::pair<int, int> - the move (row, column) with the highest score
+
+std::pair<int, int> findBestMove(AVLNode<std::pair<int, std::pair<int, int>>>* root) {
+    // sanity check
+    if (!root) {
+        throw std::runtime_error("The move tree is empty.");
     }
 
-    // sort the list in descending order based on flip count (largest flips in front)
-    moves.sort([](const std::pair<int, std::pair<int, int>>& a, const std::pair<int, std::pair<int, int>>& b) {
-        // sort by flip count in descending order
-        return a.first > b.first; 
-    });
-
-    // priority queue to store sorted moves (best move at the top)
-    std::priority_queue<std::pair<int, std::pair<int, int>>> moveQueue;
-
-    // push sorted moves into the priority queue
-    for (const auto& move : moves) {
-        moveQueue.push(move);
-    }
-
-    // initialize random seed
-    std::srand(std::time(0));
-
-    // 50/50 to either pick the move frop the top of the prio queue
-    /// or choose a move using a random iterator
-    if (std::rand() % 2 == 0) {
-        // pick a random move using a random iterator
-        auto randomIt = std::next(moves.begin(), std::rand() % moves.size());
-        aiMove = randomIt->second;
-    } else {
-        // pick the move from the top of the priority queue
-        aiMove = moveQueue.top().second;
+    // traverse to right most for highest score
+    AVLNode<std::pair<int, std::pair<int, int>>>* current = root;
+    while (current->right != nullptr) {
+        current = current->right;
     }
     
     // return the move
-    return aiMove;
+    return current->data.second; 
+}
+
+// performs an inorder traversal of the AVL tree and collects all nodes in a vector
+//
+// parameters:
+// AVLNode<std::pair<int, std::pair<int, int>>>* root - the root node of the AVL tree
+// std::vector<std::pair<int, std::pair<int, int>>>& moves - a vector to store the collected moves
+//
+// returns:
+// none
+
+void collectInorderMoves(
+    AVLNode<std::pair<int, std::pair<int, int>>>* root,
+    std::vector<std::pair<int, std::pair<int, int>>>& moves
+) {
+    // if we don't have a root 
+    // we return and the vector is empty
+    // should never happen
+    if (!root) return;
+    
+    collectInorderMoves(root->left, moves);     // left
+    moves.push_back(root->data);               // current
+    collectInorderMoves(root->right, moves);   // right
+}
+
+// selects a random move from the AVL tree by collecting all moves in sorted order
+//
+// parameters:
+// AVLNode<std::pair<int, std::pair<int, int>>>* root - the root node of the AVL tree
+//
+// returns:
+// std::pair<int, int> - a random move (row, column) from the AVL tree
+
+std::pair<int, int> getRandomMove(AVLNode<std::pair<int, std::pair<int, int>>>* root) {
+    // move tree is empty for some reason
+    // should never happen
+    if (!root) {
+        throw std::runtime_error("The move tree is empty.");
+    }
+    
+    // all the moves
+    std::vector<std::pair<int, std::pair<int, int>>> allMoves;
+    // collect the moves into an array
+    collectInorderMoves(root, allMoves); 
+
+    // pick a move, any move
+    std::srand(std::time(0));
+    int randomIndex = std::rand() % allMoves.size();
+    return allMoves[randomIndex].second; // Return the random move (row, column)
+}
+
+// determines the AI's move by populating an AVL tree with valid moves and selecting the best or random move
+//
+// parameters:
+// const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves - a map of valid moves and their corresponding flips
+// Board& board - the current game board
+//
+// returns:
+// std::pair<int, int> - the selected move (row, column)
+
+std::pair<int, int> getAIMove(
+    const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves,
+    Board& board,
+    int currentPlayer
+) {
+    // create AVL tree we will use
+    AVLTree<std::pair<int, std::pair<int, int>>> moveTree;
+
+    // populate the AVL tree with moves
+    populateMoveTree(moveTree, validMoves, board, currentPlayer);
+
+    // choose random move or  "best" move
+    // makes the games more "interesting"
+    if (std::rand() % 2 == 0) {
+        // pick a random move
+        return getRandomMove(moveTree.get_root());
+    } else {
+        // pick the "best" move
+        return findBestMove(moveTree.get_root());
+    }
 }
 
 
@@ -793,8 +887,8 @@ void playGame() {
         // and if we have an ai opponent
         if (currentPlayer == 2 && playerCount == 1) {
             // get the move from the "AI"
-            playerMove = getAIMove(validMoves);
-        }else {
+            playerMove = getAIMove(validMoves, theBoard, currentPlayer);
+        } else {
             // get a valid move for human player
             playerMove = getPlayerMove(currentPlayer, theBoard, validMoves, statusMessage, moveAssistOn);
         }
