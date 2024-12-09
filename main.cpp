@@ -551,50 +551,81 @@ std::pair<int, int> getPlayerMove(
 }
 
 
-// populates the AVL tree with moves and their scores based on valid moves
-// each move's score is calculated as ai_flips - max(player_flips) and used as the key
-// player_flips represents the maximum flips the opponent could achieve in response
+// populates the AVL tree with moves and their scores based on valid moves, 
+// using recursion up to a maximum depth
+// each move's score is calculated based minimax approach, 
+// calculating the difference ai_flips and player_flips across multiple depths
 //
 // parameters:
 // AVLTree<std::pair<int, std::pair<int, int>>>& moveTree - the AVL tree to populate with moves
 // const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves - a map of valid moves and their corresponding flips
 // Board& board - the current game board used to simulate potential moves
-// int currentPlayer - the current player's identifier (1 for X, 2 for O)
+// int currentPlayer - the identifier for the current player making the move (1 for X, 2 for O)
+// int depth - the current depth of the recursion
+// int maxDepth - the maximum depth to simulate
 //
 // returns:
-// none
+// int - the score of the best move at this level of the tree
 
-void populateMoveTree(
+int populateMoveTree(
     AVLTree<std::pair<int, std::pair<int, int>>>& moveTree,
     const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves,
     Board& board,
-    int currentPlayer
+    int currentPlayer,
+    int depth,
+    int maxDepth
 ) {
     int opponent = (currentPlayer == 1) ? 2 : 1;
 
+    // base case: if max depth reached or no valid moves, evaluate board state
+    if (depth == maxDepth || validMoves.empty()) {
+        return 0; // or some heuristic to evaluate the board state
+    }
+
+    // initialize best score for AI (maximize) or opponent (minimize)
+    int bestScore = (depth % 2 == 0) ? -std::numeric_limits<int>::max() : std::numeric_limits<int>::max();
+
+    // iterate through all valid moves
     for (const auto& move : validMoves) {
         // simulate board after move
         Board simulatedBoard = board;
         simulatedBoard.placePiece(move.first, currentPlayer, move.second);
 
-        // calculate ai flips
+        // calculate immediate flips
         int aiFlips = move.second.size();
 
-        // get valid moves for opponent
-        auto opponentMoves = simulatedBoard.getValidMoves(opponent);
+        // get valid moves for the next player
+        auto nextValidMoves = simulatedBoard.getValidMoves(opponent);
 
-        // calculate the number of flips the opponent can do
-        int playerFlips = 0;
-        for (const auto& opponentMove : opponentMoves) {
-            playerFlips = std::max(playerFlips, static_cast<int>(opponentMove.second.size()));
+        // recursively calculate the score for the opponent's response
+        int childScore = populateMoveTree(
+            moveTree,
+            nextValidMoves,
+            simulatedBoard,
+            opponent,
+            depth + 1,
+            maxDepth
+        );
+
+        // current score for this move
+        int currentScore = (depth % 2 == 0)
+                               ? aiFlips - childScore // AI's turn: maximize
+                               : childScore - aiFlips; // opponent's turn: minimize
+
+        // update the best score
+        if (depth % 2 == 0) { // AI's turn: maximize
+            bestScore = std::max(bestScore, currentScore);
+        } else { // opponent's turn: minimize
+            bestScore = std::min(bestScore, currentScore);
         }
 
-        // score is aiFlips - opponentFlips
-        int score = aiFlips - playerFlips;
-
-        // insert into tree
-        moveTree.insert({score, move.first});
+        // insert the move with its score into the AVL tree (only at root level)
+        if (depth == 0) {
+            moveTree.insert({currentScore, move.first});
+        }
     }
+
+    return bestScore;
 }
 
 // finds the move with the highest score in the AVL tree by traversing to the rightmost node
@@ -684,11 +715,14 @@ std::pair<int, int> getAIMove(
     Board& board,
     int currentPlayer
 ) {
+    // maxDepth
+    int maxDepth = 3; // just 3 for now
+    
     // create AVL tree we will use
     AVLTree<std::pair<int, std::pair<int, int>>> moveTree;
 
     // populate the AVL tree with moves
-    populateMoveTree(moveTree, validMoves, board, currentPlayer);
+    populateMoveTree(moveTree, validMoves, board, currentPlayer, 0, maxDepth);
 
     // choose random move or  "best" move
     // makes the games more "interesting"
