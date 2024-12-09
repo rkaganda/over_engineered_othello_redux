@@ -1,13 +1,15 @@
 /***********************************************************************************
- * Over-Engineered Othello
+ * Over-Engineered Othello Redux
  * 
  * Author: Rukundo Kaganda (rkaganda@gmail.com)
- * Date: 11/4/2024
+ * Date: 12/8/2024
  * 
  * Description:
  * - An implementation of Othello with for 2 players 
  *   or 1 player and "AI" opponent,
  *   with varible board size and, optional move assistance.
+ * - AI uses AVL tree built recursivly, 
+ *   using min-max algo with ai_flip - player_flips to score paths
  * 
  ***********************************************************************************/
 #include <iostream>
@@ -577,12 +579,15 @@ int populateMoveTree(
 ) {
     int opponent = (currentPlayer == 1) ? 2 : 1;
 
-    // base case: if max depth reached or no valid moves, evaluate board state
+    // if max depth reached or no valid moves, evaluate board state
+    // don't have an implentation for this right now
+    // maybe we hash board states?
     if (depth == maxDepth || validMoves.empty()) {
-        return 0; // or some heuristic to evaluate the board state
+        // just return 0 for now
+        return 0; 
     }
 
-    // initialize best score for AI (maximize) or opponent (minimize)
+    // initialize best score for AI (max) or opponent (min)
     int bestScore = (depth % 2 == 0) ? -std::numeric_limits<int>::max() : std::numeric_limits<int>::max();
 
     // iterate through all valid moves
@@ -619,7 +624,7 @@ int populateMoveTree(
             bestScore = std::min(bestScore, currentScore);
         }
 
-        // insert the move with its score into the AVL tree (only at root level)
+        // insert if we are at root
         if (depth == 0) {
             moveTree.insert({currentScore, move.first});
         }
