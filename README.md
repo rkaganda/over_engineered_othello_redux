@@ -9,6 +9,9 @@ The code was written in about \~5 hours over a span of two days.
 As of this writing the project is self-contained in one file with  
 398 lines of code, 319 comments, and 111 blank lines for a total of 828 lines.
 
+The second part of the code for the AI search tree and hashing was built over the span
+of a few hours.
+
 **Approach to Development**  
 The first step was creating data structures to represent the board and its squares, along with the base gameplay loop: displaying the board, accepting and validating player input (ensuring the input was on an empty space and within the bounds of the board), and updating the board based on player input.
 
@@ -20,8 +23,11 @@ The next step was adding an “AI” player that randomly chooses to play either
 
 The final steps involved testing and debugging, adding comments to improve readability, clarifying prompts, and adding a “move assist” option.
 
+Implementing the tree search and ai search was straight-forward, since I've worked with that pattern before, first implementing a simple single depth search 
+with my AVL Tree implementation, then adding more depth, finally adding hashing since there might be the same search over multiple games, so the board state is hashed, along with the depth of the search.
+
 **Version Control**  
-Initial version control was just leveraging NetBeans local file history, once the first step was completed a git repo was created and the runnable points from the file history were added to git. From then on git was used. [https://github.com/rkaganda/over\_engineered\_othello](https://github.com/rkaganda/over_engineered_othello)
+Initial version control was just leveraging NetBeans local file history, once the first step was completed a git repo was created and the runnable points from the file history were added to git. From then on git was used. [https://github.com/rkaganda/over\_engineered\_othello_redux](https://github.com/rkaganda/over_engineered_othello_redux)
 
 **Game Rules**  
 Othello/Reversi is a strategic two-player game with the goal of having the most pieces of your “shape” on the board by the end of the game. Players, either 'X' or 'O', take turns placing a piece on an empty square. Each move must flip at least one of the opponent's pieces by trapping them in a straight line (horizontal, vertical, or diagonal) between the newly placed piece and another of the player’s pieces. The game ends when neither player has any valid moves left, and the winner is determined by who has the most pieces of their “shape” on the board.
@@ -58,6 +64,25 @@ Gameplay Loop Function:
   * Alternates between players and tracks the game history using PlayerMove.  
   * If move assistance is enabled, it displays possible moves for the player.  
   * Ends the game when no valid moves are left for both players and announces the winner or if it’s a draw.
+
+AI Move Calculation:
+
+* **populateMoveTree**: Builds an AVL tree of possible moves using hashing and recursion.
+  * **Hashing**:
+    * Converts the current board state into a unique string using `hashBoard`.  
+    * Stores the board hash and its calculated score in a cache to avoid redundant evaluations.  
+    * If a state has already been evaluated at the same or greater depth, the cached score is reused.  
+    * Ensures that previously analyzed paths are not recalculated, optimizing the minimax process.  
+  * **Recursion**:
+    * Evaluates all valid moves recursively using the minimax algorithm.  
+    * Simulates the opponent's response at each depth, alternating between minimizing and maximizing scores.  
+    * Calculates scores for potential future board states up to a maximum depth.  
+    * Combines immediate flips with scores from deeper levels to rank moves.  
+
+* **findBestMove**: Traverses the AVL tree to select the move with the highest score.
+  * **Traversal**:
+    * Uses recursion to navigate to the rightmost node in the tree, which holds the highest-scored move.  
+    * Returns the corresponding board position as the AI's optimal move.  
 
 !![Othello Flow](./othello_flow.png)
 
@@ -156,3 +181,32 @@ Class UML:
    * `sort`  
      * **Used in**: `getAIMove` to sort moves by number of flips in descending order.
 
+
+### **2\. Trees, Graphs, Recursion**
+
+1. **Trees**  
+   * **AVL Tree**  
+     * **Used in**: `populateMoveTree` and `getAIMove` for managing and evaluating AI move options.  
+     * **Usage**: Stores moves with their corresponding scores in a balanced tree structure to optimize insertion, deletion, and retrieval.  
+
+   * **Recursive Node Balancing**  
+     * **Used in**: AVL tree implementation to maintain height balance after insertions and deletions.  
+     * **Usage**: Ensures O(log n) complexity for tree operations.  
+
+2. **Graphs**  
+   * **Graph Representation**  
+     * **Used in**: Move generation (`getValidMoves` and `findFlippablePieces`) by modeling board states as a graph.  
+     * **Usage**: Nodes represent board positions, and edges represent valid moves as determined by game rules.  
+
+   * **Adjacency Check**  
+     * **Used in**: `findFlippablePieces` to evaluate whether a move flips opponent pieces in a given direction.  
+     * **Usage**: Traverses adjacent positions to detect anchor pieces for flipping.  
+
+3. **Recursion**  
+   * **Minimax Algorithm**  
+     * **Used in**: `populateMoveTree` for evaluating board states and selecting optimal moves for the AI.  
+     * **Usage**: Explores potential moves recursively, scoring paths based on `ai_flip - player_flips`.  
+
+   * **Recursive Traversal**  
+     * **Used in**: `collectInorderMoves` for collecting AVL tree nodes in sorted order.  
+     * **Usage**: Enables random selection or analysis of moves during AI decision-making.  

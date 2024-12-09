@@ -24,6 +24,7 @@
 #include <ctime>
 #include <queue>
 #include <string>
+#include <unordered_map>
 
 // include avttree implementation
 #include "AVLTree.h"
@@ -68,7 +69,8 @@ public:
     // constructor to initialize a square as empty
     BoardSquare() {
         value = 0;
-    } 
+    }
+    
 
     // sets a piece for the specified player, throws an error if the square is already occupied
     //
@@ -155,6 +157,17 @@ public:
         } catch (const std::exception& e) {
             std::cerr << "Error initializing the board's center pieces: " << e.what() << std::endl;
         }
+    }
+    
+    // TODO 
+    std::string hashBoard() const {
+        std::string boardHash;
+        for (int row = 0; row < maxBoardSize; ++row) {
+            for (int col = 0; col < maxBoardSize; ++col) {
+                boardHash += std::to_string(getBoardPlaceValue({row, col})) + ",";
+            }
+        }
+        return boardHash;
     }
 
     // places a piece on the board at the specified location for a given player
@@ -553,21 +566,26 @@ std::pair<int, int> getPlayerMove(
 }
 
 
-// populates the AVL tree with moves and their scores based on valid moves, 
-// using recursion up to a maximum depth
-// each move's score is calculated based minimax approach, 
-// calculating the difference ai_flips and player_flips across multiple depths
+// populates the AVL tree with moves and their scores using a minimax approach,
+// considering the difference between ai_flips and player_flips across depths.
+//
+// caching is used to optimize recursive evaluation by reusing cached scores
+// for board states. 
+// if a board state has been evaluated at an equal or greater
+// depth, the cached score is used. for the root level (depth == 0), 
+// the move tree
+// is always rebuilt to ensure consistency, even if a cached score is available.
 //
 // parameters:
 // AVLTree<std::pair<int, std::pair<int, int>>>& moveTree - the AVL tree to populate with moves
-// const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves - a map of valid moves and their corresponding flips
-// Board& board - the current game board used to simulate potential moves
-// int currentPlayer - the identifier for the current player making the move (1 for X, 2 for O)
-// int depth - the current depth of the recursion
-// int maxDepth - the maximum depth to simulate
+// const std::map<std::pair<int, int>, std::set<std::pair<int, int>>>& validMoves - valid moves and their flips
+// Board& board - the current game board state
+// int currentPlayer - the current player (1 for X, 2 for O)
+// int depth - the current recursion depth
+// int maxDepth - the maximum recursion depth
 //
 // returns:
-// int - the score of the best move at this level of the tree
+// int - the best move's score at this level
 
 int populateMoveTree(
     AVLTree<std::pair<int, std::pair<int, int>>>& moveTree,
@@ -577,22 +595,42 @@ int populateMoveTree(
     int depth,
     int maxDepth
 ) {
+    // static cache for board scores
+    static std::unordered_map<std::string, std::pair<int, int>> scoreCache;
+
     int opponent = (currentPlayer == 1) ? 2 : 1;
 
-    // if max depth reached or no valid moves, evaluate board state
-    // don't have an implentation for this right now
-    // maybe we hash board states?
+    // check if we've reached the maximum depth or there are no valid moves
     if (depth == maxDepth || validMoves.empty()) {
-        // just return 0 for now
-        return 0; 
+        // use a simple heuristic or return a neutral score
+        return 0;
     }
 
-    // initialize best score for AI (max) or opponent (min)
+    // calculate the board hash
+    std::string boardHash = board.hashBoard();
+
+    // check the cache for the board state
+    auto cacheIt = scoreCache.find(boardHash);
+    if (cacheIt != scoreCache.end() && cacheIt->second.second >= depth) {
+        // use cached score if depth is sufficient
+        int cachedScore = cacheIt->second.first;
+
+        // populate the move tree with valid moves for consistency
+        if (depth == 0) {
+            for (const auto& move : validMoves) {
+                moveTree.insert({cachedScore, move.first});
+            }
+        }
+
+        return cachedScore;
+    }
+
+    // initialize the best score
     int bestScore = (depth % 2 == 0) ? -std::numeric_limits<int>::max() : std::numeric_limits<int>::max();
 
     // iterate through all valid moves
     for (const auto& move : validMoves) {
-        // simulate board after move
+        // simulate the board after the move
         Board simulatedBoard = board;
         simulatedBoard.placePiece(move.first, currentPlayer, move.second);
 
@@ -614,21 +652,24 @@ int populateMoveTree(
 
         // current score for this move
         int currentScore = (depth % 2 == 0)
-                               ? aiFlips - childScore // AI's turn: maximize
-                               : childScore - aiFlips; // opponent's turn: minimize
+                               ? aiFlips - childScore  // maximize ai's score
+                               : childScore - aiFlips; // minimize opponent's score
 
         // update the best score
-        if (depth % 2 == 0) { // AI's turn: maximize
+        if (depth % 2 == 0) {
             bestScore = std::max(bestScore, currentScore);
-        } else { // opponent's turn: minimize
+        } else {
             bestScore = std::min(bestScore, currentScore);
         }
 
-        // insert if we are at root
+        // add the move to the tree if at the root
         if (depth == 0) {
             moveTree.insert({currentScore, move.first});
         }
     }
+
+    // update the cache with the best score and depth
+    scoreCache[boardHash] = {bestScore, depth};
 
     return bestScore;
 }
