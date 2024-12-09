@@ -10,6 +10,8 @@
  *   with varible board size and, optional move assistance.
  * - AI uses AVL tree built recursivly, 
  *   using min-max algo with ai_flip - player_flips to score paths
+ * - Hasing is used to keep track of precalulated board states to avoid
+ *   having to recalculate score
  * 
  ***********************************************************************************/
 #include <iostream>
